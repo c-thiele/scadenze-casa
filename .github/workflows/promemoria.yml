@@ -1,0 +1,38 @@
+name: Promemoria scadenze
+on:
+  schedule:
+    - cron: '0 6 * * *'   # ogni giorno alle 6:00 UTC = 7:00 (ora solare) / 8:00 (legale) in Italia
+  workflow_dispatch:       # permette di lanciarlo a mano per prova
+jobs:
+  avvisa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Controlla scadenze e invia notifiche
+        env:
+          GIST_ID: ${{ secrets.GIST_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'EOF'
+          import os, json, urllib.request, datetime
+          h={'Accept':'application/vnd.github+json','User-Agent':'scadenze','Authorization':'Bearer '+os.environ['GH_TOKEN']}
+          g=json.load(urllib.request.urlopen(urllib.request.Request('https://api.github.com/gists/'+os.environ['GIST_ID'],headers=h)))
+          f=g['files']['scadenze.json']
+          txt=urllib.request.urlopen(f['raw_url']).read().decode() if f.get('truncated') else f['content']
+          oggi=datetime.date.today()
+          msgs=[]; urgente=False
+          for i in json.loads(txt).get('items',[]):
+              gg=(datetime.date.fromisoformat(i['scadenza'])-oggi).days
+              p=int(i.get('preavviso') or 0)
+              if gg<0 and (-gg)%3==1:
+                  msgs.append(f"🔴 SCADUTA da {-gg} gg: {i['titolo']}"); urgente=True
+              elif gg==0:
+                  msgs.append(f"⚠️ OGGI: {i['titolo']}"); urgente=True
+              elif gg>0 and gg<=p and gg in (p,7,1):
+                  msgs.append(f"🟠 tra {gg} gg: {i['titolo']} ({i['scadenza']})")
+          if msgs:
+              req=urllib.request.Request('https://ntfy.sh/'+os.environ['NTFY_TOPIC'],data='\n'.join(msgs).encode(),
+                  headers={'Title':'Scadenze di casa','Tags':'calendar','Priority':'high' if urgente else 'default'})
+              urllib.request.urlopen(req)
+          print(len(msgs),'avvisi inviati')
+          EOF
