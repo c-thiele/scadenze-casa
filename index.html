@@ -8,19 +8,32 @@
 <meta name="theme-color" content="#24584b">
 <link rel="icon" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
+<script>
+try{const t=JSON.parse(localStorage.getItem('scadenze_config')||'{}').tema;
+if(t==='chiaro'||t==='scuro')document.documentElement.dataset.tema=t}catch(e){}
+</script>
 <style>
 :root{
+  color-scheme:light;
   --bg:#eef2ef;--surface:#fff;--surface-2:#e8eeeb;--ink:#1c2826;--muted:#5f6d69;--line:#dbe3df;
   --brand:#24584b;--brand-ink:#fff;--brand-soft:#dcebe5;
   --head-bg:#24584b;--head-ink:#fff;
   --rosso:#b42318;--rosso-soft:#fde8e6;--arancio:#a86400;--arancio-soft:#fdf0d9;--verde:#2f7d4f;--verde-soft:#e2f2e8;
 }
-@media (prefers-color-scheme:dark){:root{
+@media (prefers-color-scheme:dark){:root:not([data-tema="chiaro"]){
+  color-scheme:dark;
   --bg:#121816;--surface:#1b2321;--surface-2:#25302d;--ink:#e6ece9;--muted:#9aa8a3;--line:#2b3532;
   --brand:#6cc0a6;--brand-ink:#0d1714;--brand-soft:#1f342d;
   --head-bg:#1a2b26;--head-ink:#e6ece9;
   --rosso:#f1786b;--rosso-soft:#3a1d1a;--arancio:#f0b14a;--arancio-soft:#3a2c14;--verde:#6cc48f;--verde-soft:#1b3326;
 }}
+:root[data-tema="scuro"]{
+  color-scheme:dark;
+  --bg:#121816;--surface:#1b2321;--surface-2:#25302d;--ink:#e6ece9;--muted:#9aa8a3;--line:#2b3532;
+  --brand:#6cc0a6;--brand-ink:#0d1714;--brand-soft:#1f342d;
+  --head-bg:#1a2b26;--head-ink:#e6ece9;
+  --rosso:#f1786b;--rosso-soft:#3a1d1a;--arancio:#f0b14a;--arancio-soft:#3a2c14;--verde:#6cc48f;--verde-soft:#1b3326;
+}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
@@ -181,6 +194,14 @@ dialog label.btn{display:inline-block;margin:0;color:var(--ink);font-weight:400;
 <!-- Impostazioni -->
 <dialog id="dlgCfg">
   <h3>Impostazioni</h3>
+  <section class="sez">
+    <h4>Aspetto</h4>
+    <label>Tema<select id="cfgTema" onchange="cambiaTema(this.value)">
+      <option value="auto">Automatico (come il telefono)</option>
+      <option value="chiaro">Chiaro</option>
+      <option value="scuro">Scuro</option>
+    </select></label>
+  </section>
   <section class="sez">
     <h4>Archivio cloud</h4>
     <p>Serve per avere gli stessi dati su più dispositivi.</p>
@@ -364,7 +385,7 @@ async function push(){
 }
 let tPush;function pushDebounced(){clearTimeout(tPush);tPush=setTimeout(push,1500)}
 
-function apriImpostazioni(){$('#cfgToken').value=cfg.token||'';$('#cfgGist').value=cfg.gistId||'';$('#dlgCfg').showModal()}
+function apriImpostazioni(){$('#cfgToken').value=cfg.token||'';$('#cfgGist').value=cfg.gistId||'';$('#cfgTema').value=cfg.tema||'auto';$('#dlgCfg').showModal()}
 async function salvaCfg(){cfg.token=$('#cfgToken').value.trim();cfg.gistId=$('#cfgGist').value.trim();salvaCfgLocale();$('#dlgCfg').close();await pull()}
 async function creaGist(){
   const token=$('#cfgToken').value.trim();if(!token)return alert('Inserisci prima il token');
@@ -374,6 +395,17 @@ async function creaGist(){
   const g=await r.json();$('#cfgGist').value=g.id;
   alert('Archivio creato.\nGist ID: '+g.id+'\nAnnotalo: serve sugli altri dispositivi e per le notifiche. Ora premi "Salva e sincronizza".');
 }
+
+/* ---- Tema chiaro/scuro ---- */
+const mqScuro=matchMedia('(prefers-color-scheme: dark)');
+function applicaTema(t){
+  const r=document.documentElement;
+  if(t==='chiaro'||t==='scuro')r.dataset.tema=t;else delete r.dataset.tema;
+  const scuro=t==='scuro'||(t!=='chiaro'&&mqScuro.matches);
+  $('meta[name="theme-color"]').content=scuro?'#1a2b26':'#24584b';
+}
+function cambiaTema(v){cfg.tema=v==='auto'?undefined:v;salvaCfgLocale();applicaTema(cfg.tema)}
+mqScuro.addEventListener('change',()=>applicaTema(cfg.tema));
 
 /* ---- Notifiche locali (all'apertura) ---- */
 async function attivaNotifiche(){
@@ -420,6 +452,7 @@ const opz=CATEGORIE.map(c=>`<option>${c}</option>`).join('');
 $('#filtroCat').innerHTML='<option value="">Tutte le categorie</option>'+opz;
 $('#form').elements.categoria.innerHTML=opz;
 $('#modello').innerHTML+=Object.keys(MODELLI).map(k=>`<option>${esc(k)}</option>`).join('');
+applicaTema(cfg.tema);
 render();
 pull().then(controllaNotifiche);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();pull()}});
