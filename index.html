@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scadenze di casa</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f6feb">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--txt:#1d2330;--muted:#6b7280;--rosso:#dc2626;--arancio:#ea8a00;--verde:#16a34a;--blu:#1f6feb}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+header{position:sticky;top:0;background:var(--blu);color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:5}
+header h1{font-size:1.1rem;margin:0;flex:1}
+button,.btn{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:.9rem;background:#eef1f5;color:var(--txt);display:inline-block}
+header button{background:rgba(255,255,255,.18);color:#fff}
+.primario{background:var(--blu);color:#fff}
+#stato{font-size:.75rem;opacity:.85;width:100%}
+main{max-width:900px;margin:auto;padding:12px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bar input,.bar select{padding:8px;border:1px solid #ccc;border-radius:8px;flex:1;min-width:140px;font-size:1rem}
+.riepilogo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.box{background:var(--card);border-radius:10px;padding:10px;box-shadow:0 1px 3px #0001;font-size:.85rem}
+.box b{display:block;font-size:1.4rem}
+.item{background:var(--card);border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:6px solid var(--verde);box-shadow:0 1px 3px #0001;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.item.scaduta{border-color:var(--rosso)}.item.vicina{border-color:var(--arancio)}
+.info{flex:1;min-width:200px}.t{font-weight:600}
+.m{color:var(--muted);font-size:.85rem}
+.az button{margin-left:4px}.az .ok{background:var(--verde);color:#fff}
+dialog{border:0;border-radius:12px;padding:16px;max-width:480px;width:94%}
+dialog label{display:block;font-size:.85rem;margin-top:8px;color:var(--muted)}
+dialog input,dialog select,dialog textarea{width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;font-size:1rem}
+.riga{display:flex;gap:8px}.riga>*{flex:1}
+.piede{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>📅 Scadenze di casa</h1>
+  <button onclick="apri()">+ Nuova</button>
+  <button onclick="apriStorico()">Storico</button>
+  <button onclick="pull()" title="Sincronizza">⟳</button>
+  <button onclick="apriImpostazioni()" title="Impostazioni">⚙</button>
+  <div id="stato"></div>
+</header>
+<main>
+  <div class="riepilogo" id="riepilogo"></div>
+  <div class="bar">
+    <input id="cerca" placeholder="Cerca…" oninput="render()">
+    <select id="filtroCat" onchange="render()"></select>
+  </div>
+  <div id="lista"></div>
+</main>
+
+<!-- Nuova / modifica -->
+<dialog id="dlgVoce"><form id="form">
+  <h3 style="margin:0">Scadenza</h3>
+  <div id="boxModello"><label>Modello rapido</label><select id="modello"><option value="">— scegli (facoltativo) —</option></select></div>
+  <input type="hidden" name="vid">
+  <label>Descrizione *</label><input name="titolo" required>
+  <div class="riga">
+    <div><label>Categoria</label><select name="categoria"></select></div>
+    <div><label>Scadenza *</label><input type="date" name="scadenza" required></div>
+  </div>
+  <div class="riga">
+    <div><label>Ripeti</label><select name="ricTipo">
+      <option value="nessuna">Mai</option><option value="giorni">Ogni N giorni</option>
+      <option value="mesi">Ogni N mesi</option><option value="anni">Ogni N anni</option></select></div>
+    <div><label>N</label><input type="number" name="ricOgni" min="1" value="1"></div>
+  </div>
+  <div class="riga">
+    <div><label>Avvisami (giorni prima)</label><input type="number" name="preavviso" min="0" value="30"></div>
+    <div><label>Importo (€)</label><input type="number" name="importo" step="0.01" min="0"></div>
+  </div>
+  <label>Link documento (es. file su MEGA)</label><input name="link" type="url" placeholder="https://mega.nz/...">
+  <label>Note</label><textarea name="note" rows="2"></textarea>
+  <div class="piede">
+    <button type="button" onclick="$('#dlgVoce').close()">Annulla</button>
+    <button class="primario">Salva</button>
+  </div>
+</form></dialog>
+
+<!-- Storico -->
+<dialog id="dlgStorico">
+  <h3 style="margin-top:0">Storico</h3>
+  <div id="storicoLista" style="max-height:60vh;overflow:auto"></div>
+  <div class="piede"><button onclick="$('#dlgStorico').close()">Chiudi</button></div>
+</dialog>
+
+<!-- Impostazioni -->
+<dialog id="dlgCfg">
+  <h3 style="margin-top:0">Impostazioni</h3>
+  <label>Token GitHub (solo permesso "gist")</label><input id="cfgToken" type="password" autocomplete="off">
+  <label>Gist ID (archivio cloud)</label><input id="cfgGist" placeholder="vuoto al primo avvio">
+  <div class="piede" style="justify-content:flex-start">
+    <button onclick="creaGist()">Crea archivio cloud</button>
+    <button onclick="attivaNotifiche()">Attiva notifiche qui</button>
+    <button onclick="esportaICS()">Esporta calendario (.ics)</button>
+    <button onclick="scarica('scadenze-backup-'+iso(oggi())+'.json',JSON.stringify(dati,null,1),'application/json')">Backup</button>
+    <label class="btn" style="margin:0;color:var(--txt);font-size:.9rem">Ripristina<input type="file" accept=".json" hidden onchange="ripristina(event)"></label>
+  </div>
+  <div class="piede">
+    <button onclick="$('#dlgCfg').close()">Chiudi</button>
+    <button class="primario" onclick="salvaCfg()">Salva e sincronizza</button>
+  </div>
+</dialog>
+
+<script>
+const CATEGORIE=['Auto/Moto','Casa','Utenze','Tasse e tributi','Assicurazioni','Documenti','Salute','Animali','Abbonamenti','Garanzie','Altro'];
+// [categoria, ogni N, tipo ricorrenza, preavviso giorni] — valori indicativi, modificabili
+const MODELLI={'Bollo auto':['Auto/Moto',1,'anni',15],'Revisione auto':['Auto/Moto',2,'anni',30],'Tagliando auto':['Auto/Moto',1,'anni',30],
+ 'Assicurazione RCA':['Assicurazioni',1,'anni',30],'Assicurazione casa':['Assicurazioni',1,'anni',30],'Manutenzione caldaia':['Casa',1,'anni',30],
+ "Carta d'identità":['Documenti',10,'anni',90],'Passaporto':['Documenti',10,'anni',90],'Patente':['Documenti',10,'anni',90],
+ 'IMU acconto':['Tasse e tributi',1,'anni',15],'IMU saldo':['Tasse e tributi',1,'anni',15],'TARI':['Tasse e tributi',1,'anni',15],
+ 'Antiparassitario':['Animali',1,'mesi',3],'Vaccino animale':['Animali',1,'anni',30],'Abbonamento':['Abbonamenti',1,'anni',15],
+ 'Token GitHub app scadenze':['Altro',1,'anni',15],'Fine garanzia':['Garanzie',1,'nessuna',30]};
+const LS='scadenze_dati',LSC='scadenze_config',FILE='scadenze.json',API='https://api.github.com/gists';
+let dati=JSON.parse(localStorage.getItem(LS)||'{"items":[],"storico":[],"aggiornato":0}');
+let cfg=JSON.parse(localStorage.getItem(LSC)||'{}');
+const $=s=>document.querySelector(s);
+const oggi=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const giorni=s=>Math.round((parse(s)-oggi())/864e5);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const euro=n=>(n||0).toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+const nuovoId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const salvaCfgLocale=()=>localStorage.setItem(LSC,JSON.stringify(cfg));
+const stato=m=>$('#stato').textContent=m;
+
+function aggiungi(s,tipo,n){
+  const d=parse(s);
+  if(tipo==='giorni'){d.setDate(d.getDate()+n);return iso(d)}
+  const mesi=tipo==='anni'?12*n:n,g=d.getDate();
+  d.setDate(1);d.setMonth(d.getMonth()+mesi);
+  d.setDate(Math.min(g,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
+  return iso(d);
+}
+
+function salva(){dati.aggiornato=Date.now();localStorage.setItem(LS,JSON.stringify(dati));render();pushDebounced()}
+
+function render(){
+  const q=$('#cerca').value.toLowerCase(),cat=$('#filtroCat').value,o=iso(oggi()),tra12=aggiungi(o,'mesi',12);
+  let nScad=0,nVic=0,spesa=0;
+  dati.items.forEach(i=>{
+    const g=giorni(i.scadenza);
+    if(g<0)nScad++;else if(g<=i.preavviso)nVic++;
+    if(i.importo){let d=i.scadenza,k=0;
+      while(d<=tra12&&k<400){if(d>=o)spesa+=i.importo;if(i.ricTipo==='nessuna')break;d=aggiungi(d,i.ricTipo,i.ricOgni||1);k++}}
+  });
+  const anno=String(new Date().getFullYear());
+  const speso=(dati.storico||[]).filter(x=>x.fatto.startsWith(anno)).reduce((a,x)=>a+(x.importo||0),0);
+  $('#riepilogo').innerHTML=`<div class="box">Scadute<b style="color:var(--rosso)">${nScad}</b></div>
+    <div class="box">In arrivo<b style="color:var(--arancio)">${nVic}</b></div>
+    <div class="box">Previste 12 mesi<b>${euro(spesa)}</b></div>
+    <div class="box">Speso nel ${anno}<b>${euro(speso)}</b></div>`;
+  const lista=dati.items.filter(i=>(!cat||i.categoria===cat)&&(!q||(i.titolo+' '+(i.note||'')).toLowerCase().includes(q)))
+    .sort((a,b)=>a.scadenza.localeCompare(b.scadenza));
+  $('#lista').innerHTML=lista.map(i=>{
+    const g=giorni(i.scadenza),cl=g<0?'scaduta':g<=i.preavviso?'vicina':'';
+    const quando=g<0?`scaduta da ${-g} gg`:g===0?'OGGI':`tra ${g} gg`;
+    const ric=i.ricTipo!=='nessuna'?` · ogni ${i.ricOgni} ${i.ricTipo}`:'';
+    const link=i.link&&/^https?:/.test(i.link)?` · <a href="${esc(i.link)}" target="_blank" rel="noopener">📎 documento</a>`:'';
+    return `<div class="item ${cl}"><div class="info"><div class="t">${esc(i.titolo)}</div>
+      <div class="m">${esc(i.categoria)} · ${parse(i.scadenza).toLocaleDateString('it-IT')} (${quando})${ric}${i.importo?' · '+euro(i.importo):''}${link}</div>
+      ${i.note?`<div class="m">${esc(i.note)}</div>`:''}</div>
+      <div class="az"><button class="ok" onclick="fatto('${i.id}')">✓ Fatto</button><button onclick="apri('${i.id}')">✎</button><button onclick="elimina('${i.id}')">🗑</button></div></div>`;
+  }).join('')||'<p class="m">Nessuna scadenza. Premi “+ Nuova”.</p>';
+}
+
+function apri(id){
+  const i=id?dati.items.find(x=>x.id===id):{id:'',titolo:'',categoria:'Casa',scadenza:iso(oggi()),preavviso:30,ricTipo:'nessuna',ricOgni:1,importo:0,note:'',link:''};
+  const f=$('#form').elements;
+  f.vid.value=i.id;f.titolo.value=i.titolo;f.categoria.value=i.categoria;f.scadenza.value=i.scadenza;
+  f.ricTipo.value=i.ricTipo;f.ricOgni.value=i.ricOgni||1;f.preavviso.value=i.preavviso;
+  f.importo.value=i.importo||'';f.note.value=i.note||'';f.link.value=i.link||'';
+  $('#modello').value='';$('#boxModello').style.display=id?'none':'';
+  $('#dlgVoce').showModal();
+}
+$('#form').addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target.elements;
+  const v={id:f.vid.value||nuovoId(),titolo:f.titolo.value.trim(),categoria:f.categoria.value,scadenza:f.scadenza.value,
+    ricTipo:f.ricTipo.value,ricOgni:Math.max(1,parseInt(f.ricOgni.value)||1),preavviso:Math.max(0,parseInt(f.preavviso.value)||0),
+    importo:parseFloat(f.importo.value)||0,link:f.link.value.trim(),note:f.note.value.trim()};
+  const k=dati.items.findIndex(x=>x.id===v.id);
+  if(k>=0)dati.items[k]=v;else dati.items.push(v);
+  $('#dlgVoce').close();salva();
+});
+$('#modello').addEventListener('change',e=>{
+  const m=MODELLI[e.target.value];if(!m)return;const f=$('#form').elements;
+  f.titolo.value=e.target.value;f.categoria.value=m[0];f.ricOgni.value=m[1];f.ricTipo.value=m[2];f.preavviso.value=m[3];
+});
+
+function fatto(id){
+  const i=dati.items.find(x=>x.id===id);if(!i)return;
+  const ric=i.ricTipo!=='nessuna';
+  if(!ric&&!confirm(`"${i.titolo}" non è ricorrente: la segno come fatta e la tolgo dalla lista?`))return;
+  let imp=i.importo||0;
+  if(i.importo){const r=prompt('Importo effettivamente pagato (€):',i.importo);if(r===null)return;imp=Number(r.replace(',','.'))||0}
+  (dati.storico??=[]).push({titolo:i.titolo,categoria:i.categoria,scadenza:i.scadenza,fatto:iso(oggi()),importo:imp});
+  if(ric)i.scadenza=aggiungi(i.scadenza,i.ricTipo,i.ricOgni||1);
+  else dati.items=dati.items.filter(x=>x!==i);
+  salva();
+}
+function elimina(id){const i=dati.items.find(x=>x.id===id);if(i&&confirm(`Eliminare "${i.titolo}"?`)){dati.items=dati.items.filter(x=>x!==i);salva()}}
+
+function apriStorico(){
+  const s=(dati.storico||[]).slice().reverse();
+  $('#storicoLista').innerHTML=s.map(x=>`<div class="m" style="padding:5px 0;border-bottom:1px solid #eee">
+    ${parse(x.fatto).toLocaleDateString('it-IT')} · ${esc(x.titolo)}${x.importo?' · '+euro(x.importo):''}</div>`).join('')||'<p class="m">Ancora vuoto.</p>';
+  $('#dlgStorico').showModal();
+}
+
+/* ---- Sincronizzazione con Gist GitHub ---- */
+const hdr=()=>({Authorization:'Bearer '+cfg.token,Accept:'application/vnd.github+json'});
+async function pull(){
+  if(!cfg.token||!cfg.gistId){stato('Solo locale (configura il cloud in ⚙)');return}
+  stato('Sincronizzo…');
+  try{
+    const r=await fetch(`${API}/${cfg.gistId}`,{headers:hdr(),cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const f=(await r.json()).files[FILE];
+    if(!f)return push();
+    const remoto=JSON.parse(f.truncated?await (await fetch(f.raw_url)).text():f.content);
+    if((remoto.aggiornato||0)>(dati.aggiornato||0)){dati=remoto;localStorage.setItem(LS,JSON.stringify(dati));render();stato('Aggiornato dal cloud ✓')}
+    else if((remoto.aggiornato||0)<(dati.aggiornato||0))await push();
+    else stato('Sincronizzato ✓');
+  }catch(e){stato('Sync non riuscita ('+e.message+'): uso i dati locali')}
+}
+async function push(){
+  if(!cfg.token||!cfg.gistId)return;
+  try{
+    const r=await fetch(`${API}/${cfg.gistId}`,{method:'PATCH',headers:hdr(),body:JSON.stringify({files:{[FILE]:{content:JSON.stringify(dati,null,1)}}})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    stato('Salvato nel cloud ✓ '+new Date().toLocaleTimeString('it-IT'));
+  }catch(e){stato('Salvataggio cloud non riuscito ('+e.message+'), dati tenuti in locale')}
+}
+let tPush;function pushDebounced(){clearTimeout(tPush);tPush=setTimeout(push,1500)}
+
+function apriImpostazioni(){$('#cfgToken').value=cfg.token||'';$('#cfgGist').value=cfg.gistId||'';$('#dlgCfg').showModal()}
+async function salvaCfg(){cfg.token=$('#cfgToken').value.trim();cfg.gistId=$('#cfgGist').value.trim();salvaCfgLocale();$('#dlgCfg').close();await pull()}
+async function creaGist(){
+  const token=$('#cfgToken').value.trim();if(!token)return alert('Inserisci prima il token');
+  const r=await fetch(API,{method:'POST',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json'},
+    body:JSON.stringify({description:'Scadenze di casa (dati app)',public:false,files:{[FILE]:{content:JSON.stringify(dati,null,1)}}})});
+  if(!r.ok)return alert('Errore '+r.status+': controlla il token (serve il permesso "gist")');
+  const g=await r.json();$('#cfgGist').value=g.id;
+  alert('Archivio creato.\nGist ID: '+g.id+'\nAnnotalo: serve sugli altri dispositivi e per le notifiche. Ora premi "Salva e sincronizza".');
+}
+
+/* ---- Notifiche locali (all'apertura) ---- */
+async function attivaNotifiche(){
+  if(!('Notification' in window))return alert('Questo browser non supporta le notifiche');
+  if(await Notification.requestPermission()==='granted'){cfg.notif=true;cfg.ultimaNotif='';salvaCfgLocale();controllaNotifiche()}
+}
+async function controllaNotifiche(){
+  if(!cfg.notif||!('Notification' in window)||Notification.permission!=='granted')return;
+  const o=iso(oggi());if(cfg.ultimaNotif===o)return;
+  const urg=dati.items.filter(i=>giorni(i.scadenza)<=i.preavviso).sort((a,b)=>a.scadenza.localeCompare(b.scadenza));
+  if(!urg.length)return;
+  const body=urg.slice(0,6).map(i=>{const g=giorni(i.scadenza);return `${i.titolo}: ${g<0?'SCADUTA':g===0?'OGGI':'tra '+g+' gg'}`}).join('\n');
+  try{const reg='serviceWorker' in navigator&&await navigator.serviceWorker.getRegistration();
+    if(reg)reg.showNotification('Scadenze di casa',{body,icon:'icon.svg',tag:'scadenze'});else new Notification('Scadenze di casa',{body})}catch(e){}
+  cfg.ultimaNotif=o;salvaCfgLocale();
+}
+
+/* ---- Calendario e backup ---- */
+const icsEsc=s=>String(s||'').replace(/\\/g,'\\\\').replace(/[,;]/g,m=>'\\'+m).replace(/\n/g,'\\n');
+function esportaICS(){
+  const F={giorni:'DAILY',mesi:'MONTHLY',anni:'YEARLY'};
+  const st=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Scadenze casa//IT','CALSCALE:GREGORIAN'];
+  dati.items.forEach(i=>{
+    L.push('BEGIN:VEVENT','UID:'+i.id+'@scadenze-casa','DTSTAMP:'+st,
+      'DTSTART;VALUE=DATE:'+i.scadenza.replace(/-/g,''),'DTEND;VALUE=DATE:'+aggiungi(i.scadenza,'giorni',1).replace(/-/g,''),
+      'SUMMARY:'+icsEsc(i.titolo),'DESCRIPTION:'+icsEsc([i.categoria,i.importo?euro(i.importo):'',i.note,i.link].filter(Boolean).join(' - ')));
+    if(F[i.ricTipo])L.push(`RRULE:FREQ=${F[i.ricTipo]};INTERVAL=${i.ricOgni||1}`);
+    // avviso alle 9:00 del giorno "preavviso"
+    L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(i.titolo),
+      'TRIGGER:'+(i.preavviso>0?`-P${i.preavviso-1}DT15H`:'PT9H'),'END:VALARM','END:VEVENT');
+  });
+  L.push('END:VCALENDAR');scarica('scadenze.ics',L.join('\r\n'),'text/calendar');
+}
+function scarica(nome,txt,tipo){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:tipo}));a.download=nome;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function ripristina(ev){
+  const f=ev.target.files[0];if(!f)return;
+  f.text().then(t=>{const d=JSON.parse(t);if(!Array.isArray(d.items))throw 0;
+    if(confirm('Sostituire i dati attuali con quelli del backup?')){dati=d;dati.storico??=[];salva()}}).catch(()=>alert('File non valido'));
+}
+
+/* ---- Avvio ---- */
+const opz=CATEGORIE.map(c=>`<option>${c}</option>`).join('');
+$('#filtroCat').innerHTML='<option value="">Tutte le categorie</option>'+opz;
+$('#form').elements.categoria.innerHTML=opz;
+$('#modello').innerHTML+=Object.keys(MODELLI).map(k=>`<option>${esc(k)}</option>`).join('');
+render();
+pull().then(controllaNotifiche);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();pull()}});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
