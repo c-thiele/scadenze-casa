@@ -5,77 +5,166 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Scadenze di casa</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1f6feb">
+<meta name="theme-color" content="#24584b">
 <link rel="icon" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--txt:#1d2330;--muted:#6b7280;--rosso:#dc2626;--arancio:#ea8a00;--verde:#16a34a;--blu:#1f6feb}
+:root{
+  --bg:#eef2ef;--surface:#fff;--surface-2:#e8eeeb;--ink:#1c2826;--muted:#5f6d69;--line:#dbe3df;
+  --brand:#24584b;--brand-ink:#fff;--brand-soft:#dcebe5;
+  --head-bg:#24584b;--head-ink:#fff;
+  --rosso:#b42318;--rosso-soft:#fde8e6;--arancio:#a86400;--arancio-soft:#fdf0d9;--verde:#2f7d4f;--verde-soft:#e2f2e8;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121816;--surface:#1b2321;--surface-2:#25302d;--ink:#e6ece9;--muted:#9aa8a3;--line:#2b3532;
+  --brand:#6cc0a6;--brand-ink:#0d1714;--brand-soft:#1f342d;
+  --head-bg:#1a2b26;--head-ink:#e6ece9;
+  --rosso:#f1786b;--rosso-soft:#3a1d1a;--arancio:#f0b14a;--arancio-soft:#3a2c14;--verde:#6cc48f;--verde-soft:#1b3326;
+}}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt)}
-header{position:sticky;top:0;background:var(--blu);color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:5}
-header h1{font-size:1.1rem;margin:0;flex:1}
-button,.btn{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:.9rem;background:#eef1f5;color:var(--txt);display:inline-block}
-header button{background:rgba(255,255,255,.18);color:#fff}
-.primario{background:var(--blu);color:#fff}
-#stato{font-size:.75rem;opacity:.85;width:100%}
-main{max-width:900px;margin:auto;padding:12px}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.bar input,.bar select{padding:8px;border:1px solid #ccc;border-radius:8px;flex:1;min-width:140px;font-size:1rem}
-.riepilogo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
-.box{background:var(--card);border-radius:10px;padding:10px;box-shadow:0 1px 3px #0001;font-size:.85rem}
-.box b{display:block;font-size:1.4rem}
-.item{background:var(--card);border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:6px solid var(--verde);box-shadow:0 1px 3px #0001;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.item.scaduta{border-color:var(--rosso)}.item.vicina{border-color:var(--arancio)}
-.info{flex:1;min-width:200px}.t{font-weight:600}
-.m{color:var(--muted);font-size:.85rem}
-.az button{margin-left:4px}.az .ok{background:var(--verde);color:#fff}
-dialog{border:0;border-radius:12px;padding:16px;max-width:480px;width:94%}
-dialog label{display:block;font-size:.85rem;margin-top:8px;color:var(--muted)}
-dialog input,dialog select,dialog textarea{width:100%;padding:8px;border:1px solid #ccc;border-radius:8px;font-size:1rem}
-.riga{display:flex;gap:8px}.riga>*{flex:1}
-.piede{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+h1,h2,h3,h4,.data b,.stat b{font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif}
+.m{color:var(--muted)}
+
+/* Intestazione */
+header{background:var(--head-bg);color:var(--head-ink);padding:16px 16px 40px}
+.testata{max-width:860px;margin:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.titolo{flex:1;min-width:180px}
+header h1{margin:0;font-size:1.4rem;font-weight:700;letter-spacing:-.01em}
+#oggi{margin:0;font-size:.92rem;opacity:.85}
+#stato{font-size:.78rem;opacity:.75;margin-top:2px;min-height:1.1em}
+
+/* Pulsanti */
+button,.btn{font:inherit;font-size:.92rem;border:0;border-radius:999px;padding:8px 14px;cursor:pointer;background:var(--surface-2);color:var(--ink);display:inline-block}
+button:hover,.btn:hover{filter:brightness(.97)}
+header button{background:rgba(255,255,255,.14);color:inherit}
+header button:hover{background:rgba(255,255,255,.26);filter:none}
+header .nuova{background:var(--head-ink);color:var(--head-bg);font-weight:600;padding:9px 16px}
+.ico{width:38px;height:38px;padding:0;display:inline-grid;place-items:center;font-size:1.05rem}
+.primario{background:var(--brand);color:var(--brand-ink);font-weight:600}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+header :focus-visible{outline-color:var(--head-ink)}
+
+/* Riepilogo */
+main{max-width:860px;margin:-26px auto 0;padding:0 14px 48px}
+.riepilogo{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:0 8px 24px -16px rgba(20,40,35,.45)}
+.stat{padding:12px 14px;border-left:1px solid var(--line)}
+.stat:first-child{border-left:0}
+.stat span{font-size:.8rem;color:var(--muted)}
+.stat b{display:block;font-size:1.5rem;line-height:1.25;font-variant-numeric:tabular-nums}
+.stat.rosso b{color:var(--rosso)}.stat.arancio b{color:var(--arancio)}
+@media (max-width:560px){
+  .riepilogo{grid-template-columns:1fr 1fr}
+  .stat:nth-child(3){border-left:0}
+  .stat:nth-child(n+3){border-top:1px solid var(--line)}
+  .stat b{font-size:1.25rem}
+}
+
+/* Ricerca e filtri */
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+.bar input,.bar select{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);flex:1;min-width:150px}
+.bar input{flex:2}
+
+/* Lista */
+.mese{display:flex;justify-content:space-between;font-size:.95rem;font-weight:700;color:var(--muted);margin:22px 4px 8px}
+.mese.rossa{color:var(--rosso)}
+.item{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.data{width:56px;height:60px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--brand-soft);color:var(--brand)}
+.data b{font-size:1.45rem;line-height:1;font-variant-numeric:tabular-nums}
+.data span{font-size:.75rem;font-weight:600;margin-top:2px}
+.data small{font-size:.65rem;opacity:.85}
+.item.vicina .data{background:var(--arancio-soft);color:var(--arancio)}
+.item.scaduta .data{background:var(--rosso);color:#fff}
+.info{min-width:0}
+.t{font-weight:650;font-size:1.02rem;overflow-wrap:anywhere}
+.quando{font-size:.86rem;font-weight:600;color:var(--brand)}
+.item.vicina .quando{color:var(--arancio)}.item.scaduta .quando{color:var(--rosso)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:.76rem;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted);text-decoration:none}
+a.chip{color:var(--brand);font-weight:600}
+.nota{font-size:.86rem;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}
+.az{display:flex;gap:4px;align-items:center}
+.az .ok{background:var(--verde-soft);color:var(--verde);font-weight:600}
+.az .ok:hover{background:var(--verde);color:#fff;filter:none}
+.az .ico{width:36px;height:36px;background:transparent;color:var(--muted)}
+.az .ico:hover{background:var(--surface-2)}
+@media (max-width:560px){
+  .item{grid-template-columns:52px 1fr}
+  .az{grid-column:1/-1;justify-content:flex-end;border-top:1px solid var(--line);padding-top:8px}
+}
+.vuoto{text-align:center;padding:40px 16px;color:var(--muted)}
+.vuoto p{margin:0 0 14px}
+
+/* Finestre */
+dialog{border:0;border-radius:18px;padding:20px;max-width:500px;width:94%;background:var(--surface);color:var(--ink);box-shadow:0 24px 60px -24px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(15,25,22,.45);backdrop-filter:blur(2px)}
+dialog[open]{animation:comparsa .18s ease-out}
+@keyframes comparsa{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+dialog h3{margin:0 0 4px;font-size:1.2rem}
+dialog label{display:block;font-size:.82rem;font-weight:600;color:var(--muted);margin-top:12px}
+dialog input,dialog select,dialog textarea{display:block;width:100%;margin-top:4px;font:inherit;font-weight:400;color:var(--ink);background:var(--bg);padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+dialog textarea{resize:vertical}
+dialog input:focus,dialog select:focus,dialog textarea:focus{outline:2px solid var(--brand);outline-offset:0;border-color:transparent}
+dialog label.btn{display:inline-block;margin:0;color:var(--ink);font-weight:400;font-size:.92rem}
+.modello{background:var(--brand-soft);padding:2px 12px 12px;border-radius:12px;margin-top:10px}
+.riga{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.piede{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+.sez{border-top:1px solid var(--line);margin-top:14px}
+.sez h4{margin:12px 0 0;font-size:.98rem}
+.sez p{margin:4px 0 0;font-size:.85rem;color:var(--muted)}
+.azioni{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.storico-riga{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.storico-riga span:first-child,.storico-riga span:last-child{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){dialog[open]{animation:none}}
 </style>
 </head>
 <body>
 <header>
-  <h1>📅 Scadenze di casa</h1>
-  <button onclick="apri()">+ Nuova</button>
-  <button onclick="apriStorico()">Storico</button>
-  <button onclick="pull()" title="Sincronizza">⟳</button>
-  <button onclick="apriImpostazioni()" title="Impostazioni">⚙</button>
-  <div id="stato"></div>
+  <div class="testata">
+    <div class="titolo">
+      <h1>Scadenze di casa</h1>
+      <p id="oggi"></p>
+      <div id="stato"></div>
+    </div>
+    <button class="nuova" onclick="apri()">+ Nuova</button>
+    <button class="ico" onclick="apriStorico()" aria-label="Storico" title="Storico">🕘</button>
+    <button class="ico" onclick="pull()" aria-label="Sincronizza" title="Sincronizza">⟳</button>
+    <button class="ico" onclick="apriImpostazioni()" aria-label="Impostazioni" title="Impostazioni">⚙</button>
+  </div>
 </header>
 <main>
   <div class="riepilogo" id="riepilogo"></div>
   <div class="bar">
-    <input id="cerca" placeholder="Cerca…" oninput="render()">
-    <select id="filtroCat" onchange="render()"></select>
+    <input id="cerca" type="search" placeholder="Cerca per nome o nota" oninput="render()" aria-label="Cerca">
+    <select id="filtroCat" onchange="render()" aria-label="Filtra per categoria"></select>
   </div>
   <div id="lista"></div>
 </main>
 
 <!-- Nuova / modifica -->
 <dialog id="dlgVoce"><form id="form">
-  <h3 style="margin:0">Scadenza</h3>
-  <div id="boxModello"><label>Modello rapido</label><select id="modello"><option value="">— scegli (facoltativo) —</option></select></div>
+  <h3>Scadenza</h3>
+  <div id="boxModello" class="modello"><label>Parti da un modello (facoltativo)
+    <select id="modello"><option value="">— scegli —</option></select></label></div>
   <input type="hidden" name="vid">
-  <label>Descrizione *</label><input name="titolo" required>
+  <label>Descrizione *<input name="titolo" required></label>
   <div class="riga">
-    <div><label>Categoria</label><select name="categoria"></select></div>
-    <div><label>Scadenza *</label><input type="date" name="scadenza" required></div>
+    <label>Categoria<select name="categoria"></select></label>
+    <label>Scadenza *<input type="date" name="scadenza" required></label>
   </div>
   <div class="riga">
-    <div><label>Ripeti</label><select name="ricTipo">
+    <label>Ripeti<select name="ricTipo">
       <option value="nessuna">Mai</option><option value="giorni">Ogni N giorni</option>
-      <option value="mesi">Ogni N mesi</option><option value="anni">Ogni N anni</option></select></div>
-    <div><label>N</label><input type="number" name="ricOgni" min="1" value="1"></div>
+      <option value="mesi">Ogni N mesi</option><option value="anni">Ogni N anni</option></select></label>
+    <label>N<input type="number" name="ricOgni" min="1" value="1"></label>
   </div>
   <div class="riga">
-    <div><label>Avvisami (giorni prima)</label><input type="number" name="preavviso" min="0" value="30"></div>
-    <div><label>Importo (€)</label><input type="number" name="importo" step="0.01" min="0"></div>
+    <label>Avvisami (giorni prima)<input type="number" name="preavviso" min="0" value="30"></label>
+    <label>Importo (€)<input type="number" name="importo" step="0.01" min="0"></label>
   </div>
-  <label>Link documento (es. file su MEGA)</label><input name="link" type="url" placeholder="https://mega.nz/...">
-  <label>Note</label><textarea name="note" rows="2"></textarea>
+  <label>Link al documento<input name="link" type="url" placeholder="https://mega.nz/..."></label>
+  <label>Note<textarea name="note" rows="2"></textarea></label>
   <div class="piede">
     <button type="button" onclick="$('#dlgVoce').close()">Annulla</button>
     <button class="primario">Salva</button>
@@ -84,23 +173,35 @@ dialog input,dialog select,dialog textarea{width:100%;padding:8px;border:1px sol
 
 <!-- Storico -->
 <dialog id="dlgStorico">
-  <h3 style="margin-top:0">Storico</h3>
+  <h3>Storico</h3>
   <div id="storicoLista" style="max-height:60vh;overflow:auto"></div>
   <div class="piede"><button onclick="$('#dlgStorico').close()">Chiudi</button></div>
 </dialog>
 
 <!-- Impostazioni -->
 <dialog id="dlgCfg">
-  <h3 style="margin-top:0">Impostazioni</h3>
-  <label>Token GitHub (solo permesso "gist")</label><input id="cfgToken" type="password" autocomplete="off">
-  <label>Gist ID (archivio cloud)</label><input id="cfgGist" placeholder="vuoto al primo avvio">
-  <div class="piede" style="justify-content:flex-start">
-    <button onclick="creaGist()">Crea archivio cloud</button>
-    <button onclick="attivaNotifiche()">Attiva notifiche qui</button>
-    <button onclick="esportaICS()">Esporta calendario (.ics)</button>
-    <button onclick="scarica('scadenze-backup-'+iso(oggi())+'.json',JSON.stringify(dati,null,1),'application/json')">Backup</button>
-    <label class="btn" style="margin:0;color:var(--txt);font-size:.9rem">Ripristina<input type="file" accept=".json" hidden onchange="ripristina(event)"></label>
-  </div>
+  <h3>Impostazioni</h3>
+  <section class="sez">
+    <h4>Archivio cloud</h4>
+    <p>Serve per avere gli stessi dati su più dispositivi.</p>
+    <label>Token GitHub (solo permesso "gist")<input id="cfgToken" type="password" autocomplete="off"></label>
+    <label>Gist ID<input id="cfgGist" placeholder="vuoto al primo avvio"></label>
+    <div class="azioni"><button onclick="creaGist()">Crea archivio cloud</button></div>
+  </section>
+  <section class="sez">
+    <h4>Avvisi e calendario</h4>
+    <div class="azioni">
+      <button onclick="attivaNotifiche()">Attiva notifiche qui</button>
+      <button onclick="esportaICS()">Esporta calendario (.ics)</button>
+    </div>
+  </section>
+  <section class="sez">
+    <h4>Backup</h4>
+    <div class="azioni">
+      <button onclick="scarica('scadenze-backup-'+iso(oggi())+'.json',JSON.stringify(dati,null,1),'application/json')">Scarica backup</button>
+      <label class="btn">Ripristina da file<input type="file" accept=".json" hidden onchange="ripristina(event)"></label>
+    </div>
+  </section>
   <div class="piede">
     <button onclick="$('#dlgCfg').close()">Chiudi</button>
     <button class="primario" onclick="salvaCfg()">Salva e sincronizza</button>
@@ -129,6 +230,11 @@ const euro=n=>(n||0).toLocaleString('it-IT',{style:'currency',currency:'EUR'});
 const nuovoId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const salvaCfgLocale=()=>localStorage.setItem(LSC,JSON.stringify(cfg));
 const stato=m=>$('#stato').textContent=m;
+const maiusc=t=>t.charAt(0).toUpperCase()+t.slice(1);
+const PLUR={giorni:['giorno','giorni'],mesi:['mese','mesi'],anni:['anno','anni']};
+const ogniTxt=i=>{const n=i.ricOgni||1,p=PLUR[i.ricTipo];return n===1?`ogni ${p[0]}`:`ogni ${n} ${p[1]}`};
+const quandoTxt=g=>g<0?`Scaduta da ${-g} ${-g===1?'giorno':'giorni'}`:g===0?'Oggi':g===1?'Domani':`Tra ${g} giorni`;
+const meseTxt=s=>maiusc(parse(s).toLocaleDateString('it-IT',{month:'long',year:'numeric'}));
 
 function aggiungi(s,tipo,n){
   const d=parse(s);
@@ -141,7 +247,25 @@ function aggiungi(s,tipo,n){
 
 function salva(){dati.aggiornato=Date.now();localStorage.setItem(LS,JSON.stringify(dati));render();pushDebounced()}
 
+function voceHTML(i){
+  const g=giorni(i.scadenza),cl=g<0?'scaduta':g<=i.preavviso?'vicina':'',d=parse(i.scadenza);
+  const anno=d.getFullYear()!==new Date().getFullYear()?`<small>${d.getFullYear()}</small>`:'';
+  const chips=[`<span class="chip">${esc(i.categoria)}</span>`];
+  if(i.ricTipo!=='nessuna')chips.push(`<span class="chip">↻ ${ogniTxt(i)}</span>`);
+  if(i.importo)chips.push(`<span class="chip">${euro(i.importo)}</span>`);
+  if(i.link&&/^https?:/.test(i.link))chips.push(`<a class="chip" href="${esc(i.link)}" target="_blank" rel="noopener">📎 Documento</a>`);
+  return `<article class="item ${cl}">
+    <div class="data" title="${d.toLocaleDateString('it-IT')}"><b>${d.getDate()}</b><span>${d.toLocaleDateString('it-IT',{month:'short'})}</span>${anno}</div>
+    <div class="info"><div class="t">${esc(i.titolo)}</div><div class="quando">${quandoTxt(g)}</div>
+      <div class="chips">${chips.join('')}</div>${i.note?`<div class="nota">${esc(i.note)}</div>`:''}</div>
+    <div class="az"><button class="ok" onclick="fatto('${i.id}')">✓ Fatto</button>
+      <button class="ico" onclick="apri('${i.id}')" aria-label="Modifica" title="Modifica">✎</button>
+      <button class="ico" onclick="elimina('${i.id}')" aria-label="Elimina" title="Elimina">🗑</button></div>
+  </article>`;
+}
+
 function render(){
+  $('#oggi').textContent=maiusc(new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'}));
   const q=$('#cerca').value.toLowerCase(),cat=$('#filtroCat').value,o=iso(oggi()),tra12=aggiungi(o,'mesi',12);
   let nScad=0,nVic=0,spesa=0;
   dati.items.forEach(i=>{
@@ -152,22 +276,23 @@ function render(){
   });
   const anno=String(new Date().getFullYear());
   const speso=(dati.storico||[]).filter(x=>x.fatto.startsWith(anno)).reduce((a,x)=>a+(x.importo||0),0);
-  $('#riepilogo').innerHTML=`<div class="box">Scadute<b style="color:var(--rosso)">${nScad}</b></div>
-    <div class="box">In arrivo<b style="color:var(--arancio)">${nVic}</b></div>
-    <div class="box">Previste 12 mesi<b>${euro(spesa)}</b></div>
-    <div class="box">Speso nel ${anno}<b>${euro(speso)}</b></div>`;
+  $('#riepilogo').innerHTML=`<div class="stat ${nScad?'rosso':''}"><span>Scadute</span><b>${nScad}</b></div>
+    <div class="stat ${nVic?'arancio':''}"><span>In arrivo</span><b>${nVic}</b></div>
+    <div class="stat"><span>Previste nei prossimi 12 mesi</span><b>${euro(spesa)}</b></div>
+    <div class="stat"><span>Speso nel ${anno}</span><b>${euro(speso)}</b></div>`;
   const lista=dati.items.filter(i=>(!cat||i.categoria===cat)&&(!q||(i.titolo+' '+(i.note||'')).toLowerCase().includes(q)))
     .sort((a,b)=>a.scadenza.localeCompare(b.scadenza));
-  $('#lista').innerHTML=lista.map(i=>{
-    const g=giorni(i.scadenza),cl=g<0?'scaduta':g<=i.preavviso?'vicina':'';
-    const quando=g<0?`scaduta da ${-g} gg`:g===0?'OGGI':`tra ${g} gg`;
-    const ric=i.ricTipo!=='nessuna'?` · ogni ${i.ricOgni} ${i.ricTipo}`:'';
-    const link=i.link&&/^https?:/.test(i.link)?` · <a href="${esc(i.link)}" target="_blank" rel="noopener">📎 documento</a>`:'';
-    return `<div class="item ${cl}"><div class="info"><div class="t">${esc(i.titolo)}</div>
-      <div class="m">${esc(i.categoria)} · ${parse(i.scadenza).toLocaleDateString('it-IT')} (${quando})${ric}${i.importo?' · '+euro(i.importo):''}${link}</div>
-      ${i.note?`<div class="m">${esc(i.note)}</div>`:''}</div>
-      <div class="az"><button class="ok" onclick="fatto('${i.id}')">✓ Fatto</button><button onclick="apri('${i.id}')">✎</button><button onclick="elimina('${i.id}')">🗑</button></div></div>`;
-  }).join('')||'<p class="m">Nessuna scadenza. Premi “+ Nuova”.</p>';
+  const gruppi=[];
+  lista.forEach(i=>{
+    const k=giorni(i.scadenza)<0?'Scadute':meseTxt(i.scadenza);
+    let gr=gruppi[gruppi.length-1];
+    if(!gr||gr.k!==k)gruppi.push(gr={k,v:[]});
+    gr.v.push(i);
+  });
+  $('#lista').innerHTML=gruppi.map(gr=>`<section><h2 class="mese ${gr.k==='Scadute'?'rossa':''}"><span>${gr.k}</span><span>${gr.v.length}</span></h2>${gr.v.map(voceHTML).join('')}</section>`).join('')
+    ||(dati.items.length
+      ?'<div class="vuoto"><p>Nessuna scadenza corrisponde alla ricerca.</p></div>'
+      :'<div class="vuoto"><p>Non hai ancora inserito scadenze.</p><button class="primario" onclick="apri()">Aggiungi la prima</button></div>');
 }
 
 function apri(id){
@@ -208,15 +333,15 @@ function elimina(id){const i=dati.items.find(x=>x.id===id);if(i&&confirm(`Elimin
 
 function apriStorico(){
   const s=(dati.storico||[]).slice().reverse();
-  $('#storicoLista').innerHTML=s.map(x=>`<div class="m" style="padding:5px 0;border-bottom:1px solid #eee">
-    ${parse(x.fatto).toLocaleDateString('it-IT')} · ${esc(x.titolo)}${x.importo?' · '+euro(x.importo):''}</div>`).join('')||'<p class="m">Ancora vuoto.</p>';
+  $('#storicoLista').innerHTML=s.map(x=>`<div class="storico-riga"><span class="m">${parse(x.fatto).toLocaleDateString('it-IT')}</span>
+    <span>${esc(x.titolo)}</span><span>${x.importo?euro(x.importo):''}</span></div>`).join('')||'<p class="m">Qui compariranno le scadenze segnate come fatte.</p>';
   $('#dlgStorico').showModal();
 }
 
 /* ---- Sincronizzazione con Gist GitHub ---- */
 const hdr=()=>({Authorization:'Bearer '+cfg.token,Accept:'application/vnd.github+json'});
 async function pull(){
-  if(!cfg.token||!cfg.gistId){stato('Solo locale (configura il cloud in ⚙)');return}
+  if(!cfg.token||!cfg.gistId){stato('Solo su questo dispositivo (configura il cloud in ⚙)');return}
   stato('Sincronizzo…');
   try{
     const r=await fetch(`${API}/${cfg.gistId}`,{headers:hdr(),cache:'no-store'});
